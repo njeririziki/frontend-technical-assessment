@@ -3,6 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Frontend Assessment</title>
     <link rel="stylesheet" href="src/css/styles.css" />
   </head>
@@ -26,8 +29,65 @@
       </nav>
     </header>
     <main>
-      <section id="nav-section" class=""></section>
+      <section id="drag-section" class="content-section">
+        <h2>Drag & Drop Demo</h2>
+        <div class="drag-drop-container">
+          <div class="draggable-list">
+            <div class="draggable-item" draggable="true">
+              <div class="item-content">Item 1</div>
+              <span class="drag-handle">⋮</span>
+            </div>
+            <div class="draggable-item" draggable="true">
+              <div class="item-content">Item 2</div>
+              <span class="drag-handle">⋮</span>
+            </div>
+            <div class="draggable-item" draggable="true">
+              <div class="item-content">Item 3</div>
+              <span class="drag-handle">⋮</span>
+            </div>
+          </div>
+          <div class="drop-zones">
+            <div class="drop-zone">
+              <div class="drop-zone-label">Drop Here</div>
+            </div>
+            <div class="drop-zone">
+              <div class="drop-zone-label">Drop Here</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="list-section" class="content-section">
+        <h2>Blog List Demo</h2>
+        <div class="blog-list-container">
+          <div class="blog-controls">
+            <select class="sort-select">
+              <option value="">Sort by...</option>
+              <option value="date">Date</option>
+              <option value="reading_time">Reading Time</option>
+              <option value="category">Category</option>
+            </select>
+            <select class="filter-select">
+              <option value="">Filter by...</option>
+              <option value="Gadgets">Gadgets</option>
+              <option value="Startups">Startups</option>
+              <option value="Writing">Writing</option>
+            </select>
+            <input
+              type="search"
+              class="search-input"
+              placeholder="Search blogs..."
+            />
+          </div>
+          <div class="loading-indicator hidden">Loading blogs...</div>
+          <div class="error-container hidden"></div>
+          <div class="blog-list-content">
+            <!-- Blogs will be rendered here -->
+          </div>
+        </div>
+      </section>
     </main>
     <script type="module" src="src/js/main.js"></script>
+  </body>
   </body>
 </html>
