@@ -3,14 +3,41 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Frontend Assessment</title>
     <link rel="stylesheet" href="src/css/styles.css" />
   </head>
+
   <body>
     <header>
-      <!-- Implement navigation here (not required on this branch) -->
+      <nav class="nav">
+        <button
+          class="nav-toggle"
+          aria-label="Toggle navigation"
+          aria-expanded="false"
+          aria-controls="nav-list"
+        >
+          <span class="hamburger"></span>
+        </button>
+        <ul id="nav-list" class="nav-list">
+          <li><a href="#nav-section" class="nav-link">Navigation</a></li>
+          <li><a href="#drag-section" class="nav-link">Drag & Drop</a></li>
+          <li><a href="#list-section" class="nav-link">Blog List</a></li>
+        </ul>
+      </nav>
     </header>
-    <main>
+    <main class="container">
+         <section id="nav-section" class="content-section" >
+            <div class="nav-content">
+             <h2>Navigation Component</h2>
+             <p>This section demonstrates the sticky navigation with intersectionObserver.</p>
+             <div class="bordered-text">
+                Scroll to see the navigation update and highlight the current section
+             </div>
+             </div>
+         </section>
       <section id="drag-section" class="content-section">
         <h2>Drag & Drop Demo</h2>
         <div class="drag-drop-container">
@@ -70,5 +97,6 @@
       </section>
     </main>
     <script type="module" src="src/js/main.js"></script>
+  </body>
   </body>
 </html>
