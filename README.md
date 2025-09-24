@@ -91,4 +91,6 @@ This is a 48-hour technical assessment focusing on three main components. Basic 
 - Code quality and organization
 - Feature completeness
 - Responsive design implementation
+- Feature completeness
+- Responsive design implementation
 - Documentation quality
