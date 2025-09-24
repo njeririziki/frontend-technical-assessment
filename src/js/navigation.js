@@ -5,8 +5,8 @@
  * - No global state: all state is encapsulated in the class instance.
  * - Proper event listener and observer cleanup via `destroy()`.
  * - Uses IntersectionObserver for section visibility and highlighting.
- * - Uses requestAnimationFrame for scroll-based effects, reducing CPU usage.
- * - Adds JSDoc comments for all public methods.
+ * - Simplified scroll behavior: remove transform accumulation that caused drift.
+ * - Adds hamburger toggle logic for responsive nav.
  *
  * Usage:
  *   const nav = new Navigation();
@@ -29,12 +29,25 @@ export class Navigation {
     this.isScrolling = false;
     /** @private {string|null} */
     this.currentSection = null;
-    /** @private {number|null} */
-    this.rafId = null;
-    /** @private {Function[]} */
+
+    // Responsive nav elements
+    /** @private {HTMLButtonElement|null} */
+    this.navToggle = document.querySelector(".nav-toggle");
+    /** @private {HTMLUListElement|null} */
+    this.navList = document.querySelector("#nav-list");
+
+    /** @private */
     this.linkHandlers = [];
-    /** @private {Function|null} */
+    /** @private */
     this.scrollHandler = null;
+    /** @private */
+    this.navToggleHandler = null;
+    /** @private */
+    this.outsideClickHandler = null;
+    /** @private */
+    this.escapeHandler = null;
+    /** @private */
+    this.resizeHandler = null;
 
     this.init();
   }
@@ -44,12 +57,10 @@ export class Navigation {
    * @private
    */
   init() {
-    // IntersectionObserver for section highlighting and scaling
+    // IntersectionObserver for section highlighting (no transforms applied)
     this.sectionObserver = new IntersectionObserver(
       this.handleSectionIntersect.bind(this),
-      {
-        threshold: 0.5,
-      }
+      { threshold: 0.5 }
     );
     this.sections.forEach((section) => this.sectionObserver.observe(section));
 
@@ -60,34 +71,54 @@ export class Navigation {
       this.linkHandlers.push({ link, handler });
     });
 
-    // Scroll event for opacity effect (throttled with rAF)
-    this.scrollHandler = this.handleScroll.bind(this);
-    window.addEventListener("scroll", this.scrollHandler, { passive: true });
+    // Responsive nav toggle
+    if (this.navToggle && this.navList) {
+      this.navToggleHandler = this.handleNavToggle.bind(this);
+      this.navToggle.addEventListener("click", this.navToggleHandler);
 
-    // Start scroll effect loop
-    this.rafId = requestAnimationFrame(this.scrollEffectLoop.bind(this));
+      // Close on outside click
+      this.outsideClickHandler = (e) => {
+        const expanded =
+          this.navToggle.getAttribute("aria-expanded") === "true";
+        if (!expanded) return;
+        if (
+          !this.navList.contains(e.target) &&
+          !this.navToggle.contains(e.target)
+        ) {
+          this.setNavExpanded(false);
+        }
+      };
+      document.addEventListener("click", this.outsideClickHandler);
+
+      // Close on Escape
+      this.escapeHandler = (e) => {
+        if (e.key === "Escape") this.setNavExpanded(false);
+      };
+      window.addEventListener("keydown", this.escapeHandler);
+
+      // Reset state on resize ≥ 768px
+      this.resizeHandler = () => {
+        if (window.innerWidth >= 768) this.setNavExpanded(false, true);
+      };
+      window.addEventListener("resize", this.resizeHandler);
+    }
   }
 
   /**
-   * Handles section intersection changes for highlighting and scaling.
+   * Handles section intersection changes for state.
    * @param {IntersectionObserverEntry[]} entries
    * @private
    */
   handleSectionIntersect(entries) {
     entries.forEach((entry) => {
       if (entry.isIntersecting) {
-        entry.target.style.transform = "scale(1.05)";
-        entry.target.style.opacity = "1";
         this.currentSection = entry.target.id;
-      } else {
-        entry.target.style.transform = "scale(1)";
-        entry.target.style.opacity = "0.5";
       }
     });
   }
 
   /**
-   * Handles anchor link clicks for smooth scrolling.
+   * Handles anchor link clicks for smooth scrolling (no transform side-effects).
    * @param {HTMLAnchorElement} link
    * @param {MouseEvent} e
    * @private
@@ -99,50 +130,54 @@ export class Navigation {
     if (!target) return;
 
     this.isScrolling = true;
-    target.scrollIntoView({ behavior: "smooth", block: "start" });
 
-    // Listen for scroll end (approximate)
-    const onScrollEnd = () => {
-      // Check if target is at the top of viewport
-      const rect = target.getBoundingClientRect();
-      if (Math.abs(rect.top) < 2) {
-        this.isScrolling = false;
-        window.removeEventListener("scroll", onScrollEnd);
-      } else {
-        // Keep listening until scroll ends
-        requestAnimationFrame(onScrollEnd);
-      }
-    };
-    window.addEventListener("scroll", onScrollEnd);
+    // Account for sticky header using scrollMarginTop if available
+    // Fallback to manual offset
+    const header = document.querySelector("header");
+    const headerHeight = header ? header.offsetHeight : 0;
+    const targetTop =
+      window.pageYOffset + target.getBoundingClientRect().top - headerHeight;
+
+    window.scrollTo({ top: targetTop, behavior: "smooth" });
+
+    // Close mobile nav after navigation
+    this.setNavExpanded(false);
+
+    // End scrolling flag after timeout
+    window.setTimeout(() => {
+      this.isScrolling = false;
+    }, 500);
   }
 
   /**
-   * Handles scroll events for updating section opacity.
-   * Throttled via requestAnimationFrame.
+   * Toggle handler for hamburger button
    * @private
    */
-  handleScroll() {
-    // Opacity is handled by IntersectionObserver, but we can update transforms here
-    // (see scrollEffectLoop)
-    // No direct DOM manipulation here; handled in scrollEffectLoop
+  handleNavToggle() {
+    const expanded = this.navToggle.getAttribute("aria-expanded") === "true";
+    this.setNavExpanded(!expanded);
   }
 
   /**
-   * Loop for scroll-based effects (e.g., parallax).
-   * Uses requestAnimationFrame for efficiency.
+   * Sets nav expanded state with ARIA and class sync
+   * @param {boolean} expanded
+   * @param {boolean} [silent=false] if true, only reset ARIA without animation
    * @private
    */
-  scrollEffectLoop() {
-    if (!this.isScrolling) {
-      this.sections.forEach((section) => {
-        const rect = section.getBoundingClientRect();
-        // Subtle parallax effect
-        section.style.transform += ` translateY(${
-          Math.sin(rect.top / 100) * 2
-        }px)`;
+  setNavExpanded(expanded, silent = false) {
+    if (!this.navToggle || !this.navList) return;
+    this.navToggle.setAttribute("aria-expanded", String(expanded));
+    if (expanded) {
+      this.navList.classList.add("open");
+      if (silent) this.navList.style.transition = "none";
+      // restore transition next frame
+      requestAnimationFrame(() => {
+        this.navList.style.transition = "";
       });
+    } else {
+      this.navList.classList.remove("open");
+      this.navList.style.transition = "";
     }
-    this.rafId = requestAnimationFrame(this.scrollEffectLoop.bind(this));
   }
 
   /**
@@ -163,15 +198,19 @@ export class Navigation {
       link.removeEventListener("click", handler);
     });
     this.linkHandlers = [];
-    // Remove scroll event
-    if (this.scrollHandler) {
-      window.removeEventListener("scroll", this.scrollHandler);
-      this.scrollHandler = null;
+
+    // Remove nav toggle related listeners
+    if (this.navToggle && this.navToggleHandler) {
+      this.navToggle.removeEventListener("click", this.navToggleHandler);
     }
-    // Cancel animation frame
-    if (this.rafId) {
-      cancelAnimationFrame(this.rafId);
-      this.rafId = null;
+    if (this.outsideClickHandler) {
+      document.removeEventListener("click", this.outsideClickHandler);
+    }
+    if (this.escapeHandler) {
+      window.removeEventListener("keydown", this.escapeHandler);
+    }
+    if (this.resizeHandler) {
+      window.removeEventListener("resize", this.resizeHandler);
     }
   }
 }
