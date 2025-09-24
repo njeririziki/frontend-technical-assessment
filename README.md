@@ -20,8 +20,6 @@
 - All code uses ES2015+ features and includes JSDoc comments for methods.
 - Error handling for API fetch and UI interactions.
 
-### Pending Items
-
 ### Technical Challenges
 
 - Ensuring drag-and-drop animations remained smooth and did not freeze.
